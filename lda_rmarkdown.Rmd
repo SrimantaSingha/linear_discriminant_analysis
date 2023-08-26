@@ -1,0 +1,144 @@
+---
+title: "LDA ON DIABETES DATASET"
+author: "Srimanta Singha"
+date: "`r Sys.Date()`"
+output: html_document
+---
+Before using the LDA   algorithm to classify the dataset, we first study the dataset DIABETES.
+
+# Description on data:
+
+This dataset is originally from the National Institute of Diabetes and Digestive and Kidney Diseases. The objective is to predict based on diagnostic measurements whether a patient has diabetes or not.
+There are 8 features (explanatory variables) in the dataset to predict a patient has diabetes or not.
+
+The variables in our dataset are:
+
+•	Pregnancies: Number of times pregnant
+
+•	Glucose: Plasma glucose concentration   in 2 hours in an oral glucose tolerance test
+
+•	Blood Pressure: Diastolic blood pressure (mm Hg)
+
+•	Skin Thickness: Triceps skin fold thickness (mm)
+
+•	Insulin: 2-Hour serum insulin (mu U/ml)
+
+•	BMI: Body mass index (weight in kg/(height in m)^2)
+
+•	Age: Age (years)
+
+•	Outcome: Class variable (0 or 1)
+
+Here, the outcome is our response variable which is categorical variable having two classes, namely 0 and 1, where  0  : patient has no diabetes, 1: patient has diabetes.
+
+Since the output variable is categorical and has some labels, we will use classification technique under supervised machine learning.
+
+Here we will use   LDA   algorithm  to classify the data set.
+
+## Aim :
+   To build the LDA model and classify the dataset and predict the new patient status on given features.
+   
+# Data Structure:
+
+ We will use R code to analyse the data using LDA. Then structure of the data structure given as follows:
+
+
+```{r}
+data=read.csv("C:/Users/Srimanta/Dataset/diabetes.csv") # loading the dataset.
+head(data)
+```
+# Data processing:
+
+We will replace 0 by NA to identify missing values on the features which values can never 0 generally but here takes 0 in the given dataset.
+First exclude the features which may takes 0(here Pregnancies) and Outcome(response) from the original data set.
+
+```{r}
+data_origin=data # copying original dataset.
+data1=data[,-c(1,9)]  #exclude Pregnancies and Outcome.
+data1[data1==0]=NA  #REPLACE 0 BY NA
+colSums(is.na(data1)) # Identify columns containing missing values
+```
+Clearly, Age and diabetes pedigree function also does not contain missing values and hence among the 8 features 3 features does not missing values. Thus the input matrix containing missing values is given by as
+```{r}
+data2=data1[,-c(6,7)] # input matrix containing missing data.
+```
+ Now we will use multiple imputation technique to impute missing value.
+ 
+```{r}
+ library(mice)
+imputed =mice(data2,method="pmm") # multiple imputation algorithm applying.
+completed_data=complete(imputed)    # after imputation getting original dataset #data2.
+data_new=cbind(completed_data,data[,c(1,7,8,9)]) # the new input matrix without #missing data.
+head(data_new) 
+ 
+```
+# LDA classification:
+We will apply LDA on the new dataset data_new. 
+ 
+Required library:
+```{r}
+library("MASS")
+```
+Scalling the dataset:
+ 
+One of the key assumptions of linear discriminant analysis is that each of the predictor variables have the same variance. An easy way to assure that this assumption is met is to scale each variable such that it has a mean of 0 and a standard deviation of 1.
+
+```{r}
+data_new[,1:8]=scale(data[,1:8])
+apply(data_new[,1:8],2,mean)  # finding mean of #each column of data_new[,1:8]
+```
+```{r}
+apply(data_new[,1:8],2,sd)  ## finding standard deviation of each column of data_new[,1:8]
+```
+Splitting the dataset:
+
+```{r}
+set.seed(1)
+sample=sample(c(TRUE, FALSE),
+nrow(data_new), replace=TRUE, prob=c(0.7,0.3))
+train=data_new[sample, ]
+test=data_new[!sample, ]
+```
+
+MODEL FITTING ON TRAIN DATA:
+
+```{r}
+model=lda(Outcome ~., data=train) # LDA MODEL BUILDING
+model
+```
+
+PREDICTION ON TEST DATA :
+
+```{r}
+predicted <- predict(model, test) # Use LDA to make prediction on test data
+names(predicted) # Gives the variables name in the data frame predicted.
+head(predicted$class) # Gives the predicted class of first six row of test data.
+head(predicted$posterior) # Gives the posterior probabilities of first six rows.
+head(predicted$x) # Gives the predicted values of linear discriminant of first six rows.
+```
+ACCURACY:
+
+```{r}
+mean(predicted$class==test$Outcome)   
+```
+The accuracy is 74.56%.
+
+#NEW DATA POINT PREDICTION:
+
+```{r}
+Pregnancies=5
+Glucose=170
+BloodPressure=60
+SkinThickness=28
+Insulin=140
+BMI=30.5
+DiabetesPedigreeFunction=0.693
+Age=40
+new=data.frame(Pregnancies=5,Glucose=170,BloodPressure=60,SkinThickness=28,Insulin=140,BMI=30.5,DiabetesPedigreeFunction=0.693,Age=40)
+predicted=predict(model,new)
+predicted$class
+```
+This implies our new data point belongs to the class 1 that is  , the patient may have the diabetes.
+
+                        # THANK YOU
+                        
